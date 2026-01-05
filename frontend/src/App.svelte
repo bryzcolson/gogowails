@@ -1,79 +1,129 @@
 <script lang="ts">
-  import logo from './assets/images/logo-universal.png'
-  import {Greet} from '../wailsjs/go/main/App.js'
+  import { onMount } from "svelte";
+  import { Fetch } from "../wailsjs/go/main/App"
+  import type { GopherResponse } from "./types/gopher";
+  import AddressBar from "./lib/AddressBar.svelte";
+  import Content from "./lib/Content.svelte";
 
-  let resultText: string = "Please enter your name below 👇"
-  let name: string
+  let url = $state("gopher://gopher.floodgap.com");
+  let response = $state<GopherResponse | null>(null);
 
-  function greet(): void {
-    Greet(name).then(result => resultText = result)
+  onMount(() => {
+    navigate(url);
+  });
+
+  async function navigate(url: string) {
+    const parsed = parseUrl(url);
+    if (!parsed) {
+      return;
+    }
+
+    response = null;
+
+    const result = await Fetch(parsed.host, parsed.port, parsed.selector);
+    if (!result.err) {
+      response = result;
+    }
+  }
+
+  function parseUrl(url: string) {
+    if (url.startsWith("gopher://")) {
+      url = url.substring(9);
+    }
+
+    const parts = url.split("/");
+    const hostPort = parts[0].split(":");
+    const host = hostPort[0];
+    const port = hostPort[1] || "70";
+    const selector = parts.length > 1
+      ? "/" + parts.slice(1).join("/")
+      : "/";
+
+    if (!host) {
+      return null;
+    }
+
+    return { host, port, selector };
+  }
+
+  function handleGo(newUrl: string) {
+    url = newUrl;
+    navigate(newUrl);
+  }
+
+  function handleItemClick(item: { host: string, port: string, selector: string }) {
+    const portPart = item.port === "70" ? "" : `:${item.port}`;
+    const newURL = `gopher://${item.host}${portPart}${item.selector}`;
+    url = newURL;
+    navigate(newURL);
   }
 </script>
 
 <main>
-  <img alt="Wails logo" id="logo" src="{logo}">
-  <div class="result" id="result">{resultText}</div>
-  <div class="input-box" id="input">
-    <input autocomplete="off" bind:value={name} class="input" id="name" type="text"/>
-    <button class="btn" on:click={greet}>Greet</button>
+  <div class="browser">
+    <header>
+      <AddressBar
+        bind:url={url}
+        onGo={handleGo}
+      />
+    </header>
+
+    <div class="content">
+      {#if response}
+        <Content
+        {response}
+         onItemClick={handleItemClick}
+        />
+      {/if}
+    </div>
   </div>
 </main>
 
 <style>
-
-  #logo {
-    display: block;
-    width: 50%;
-    height: 50%;
-    margin: auto;
-    padding: 10% 0 0;
-    background-position: center;
-    background-repeat: no-repeat;
-    background-size: 100% 100%;
-    background-origin: content-box;
+  @font-face {
+    font-family: 'Agave Nerd Font Mono';
+    src: url('./assets/fonts/AgaveNerdFontMono-Regular.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
   }
 
-  .result {
-    height: 20px;
-    line-height: 20px;
-    margin: 1.5rem auto;
+  :global(body) {
+    margin: 0;
+    padding: 0;
+    font-family: 'Agave Nerd Font Mono', monospace;
+    background-color: #ffffff;
+    color: #000000;
   }
 
-  .input-box .btn {
-    width: 60px;
-    height: 30px;
-    line-height: 30px;
-    border-radius: 3px;
-    border: none;
-    margin: 0 0 0 20px;
-    padding: 0 8px;
-    cursor: pointer;
+  main {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
   }
 
-  .input-box .btn:hover {
-    background-image: linear-gradient(to top, #cfd9df 0%, #e2ebf0 100%);
-    color: #333333;
+  .browser {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
   }
 
-  .input-box .input {
-    border: none;
-    border-radius: 3px;
-    outline: none;
-    height: 30px;
-    line-height: 30px;
-    padding: 0 10px;
-    background-color: rgba(240, 240, 240, 1);
-    -webkit-font-smoothing: antialiased;
+  header {
+    background-color: #f5f5f5;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #cccccc;
   }
 
-  .input-box .input:hover {
-    border: none;
-    background-color: rgba(255, 255, 255, 1);
+  h1 {
+    margin: 0 0 0.75rem 0;
+    font-size: 1.2rem;
+    font-weight: normal;
+    color: #666666;
   }
 
-  .input-box .input:focus {
-    border: none;
-    background-color: rgba(255, 255, 255, 1);
+  .content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 2rem;
+    background-color: #ffffff;
   }
-
 </style>
