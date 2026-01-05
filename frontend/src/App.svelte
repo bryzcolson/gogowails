@@ -4,15 +4,18 @@
   import type { GopherResponse } from "./types/gopher";
   import AddressBar from "./lib/AddressBar.svelte";
   import Content from "./lib/Content.svelte";
+  import {navigationStore} from "./stores/navigation.svelte";
 
   let url = $state("gopher://gopher.floodgap.com");
   let response = $state<GopherResponse | null>(null);
+  let canGoBack = $derived(navigationStore.canGoBack);
+  let canGoForward = $derived(navigationStore.canGoForward);
 
   onMount(() => {
     navigate(url);
   });
 
-  async function navigate(url: string) {
+  async function navigate(url: string, addToHistory = true) {
     const parsed = parseUrl(url);
     if (!parsed) {
       return;
@@ -23,6 +26,10 @@
     const result = await Fetch(parsed.host, parsed.port, parsed.selector);
     if (!result.err) {
       response = result;
+
+      if (addToHistory) {
+        navigationStore.push(url);
+      }
     }
   }
 
@@ -46,6 +53,24 @@
     return { host, port, selector };
   }
 
+  function handleBack() {
+    navigationStore.goBack();
+    const newUrl = navigationStore.currentUrl;
+    if (newUrl) {
+      url = newUrl;
+      navigate(newUrl, false);
+    }
+  }
+
+  function handleNext() {
+    navigationStore.goForward();
+    const newUrl = navigationStore.currentUrl;
+    if (newUrl) {
+      url = newUrl;
+      navigate(newUrl, false);
+    }
+  }
+
   function handleGo(newUrl: string) {
     url = newUrl;
     navigate(newUrl);
@@ -64,7 +89,11 @@
     <header>
       <AddressBar
         bind:url={url}
+        {canGoBack}
+        {canGoForward}
         onGo={handleGo}
+        onBack={handleBack}
+        onForward={handleNext}
       />
     </header>
 

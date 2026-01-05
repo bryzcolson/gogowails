@@ -1,10 +1,14 @@
 <script lang="ts">
   interface Props {
     url: string;
+    canGoBack: boolean;
+    canGoForward: boolean;
     onGo: (url: string) => void;
+    onBack: () => void;
+    onForward: () => void;
   }
 
-  let { url = $bindable(), onGo }: Props = $props();
+  let { url = $bindable(), canGoBack, canGoForward, onGo, onBack, onForward }: Props = $props();
 
   function handleSubmit(e: SubmitEvent) {
     e.preventDefault();
@@ -13,6 +17,24 @@
 </script>
 
 <div class="address-bar">
+  <div class="nav-buttons">
+    <button
+      onclick={onBack}
+      disabled={!canGoBack}
+      title="Back"
+      aria-label="Go back"
+    >
+      Back
+    </button>
+    <button
+      onclick={onForward}
+      disabled={!canGoForward}
+      title="Next"
+      aria-label="Go forward"
+    >
+      Next
+    </button>
+  </div>
   <form onsubmit={handleSubmit}>
     <input
       type="text"
@@ -29,6 +51,36 @@
     display: flex;
     gap: 0.5rem;
     align-items: center;
+  }
+
+  .nav-buttons {
+    display: flex;
+    gap: 0.25rem;
+  }
+
+  .nav-buttons button {
+    background-color: #e0e0e0;
+    color: #000000;
+    border: 1px solid #999999;
+    border-radius: 4px;
+    padding: 0.4rem 1.2rem;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-family: 'Agave Nerd Font Mono', monospace;
+    transition: background-color 0.1s;
+  }
+
+  .nav-buttons button:hover:not(:disabled) {
+    background-color: #d0d0d0;
+  }
+
+  .nav-buttons button:active:not(:disabled) {
+    background-color: #c0c0c0;
+  }
+
+  .nav-buttons button:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
   }
 
   form {
