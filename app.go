@@ -3,7 +3,9 @@ package main
 import (
 	"bufio"
 	"context"
+	"encoding/base64"
 	"fmt"
+	"io"
 	"net"
 	"strings"
 	"time"
@@ -14,18 +16,18 @@ type App struct {
 }
 
 type GopherItem struct {
-	Type        string `json:"type"`
-	Display     string `json:"display"`
-	Selector    string `json:"selector"`
-	Host        string `json:"host"`
-	Port        string `json:"port"`
-	Description string `json:"description"`
+	Type     string `json:"type"`
+	Display  string `json:"display"`
+	Selector string `json:"selector"`
+	Host     string `json:"host"`
+	Port     string `json:"port"`
 }
 
 type GopherResponse struct {
-	Items []GopherItem `json:"items"`
-	Raw   string       `json:"raw"`
-	Err   string       `json:"err"`
+	Items       []GopherItem `json:"items"`
+	Raw         string       `json:"raw"`
+	Err         string       `json:"err"`
+	ContentType string       `json:"contentType"`
 }
 
 func NewApp() *App {
@@ -36,12 +38,15 @@ func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 }
 
-func (a *App) Fetch(host string, port string, selector string) GopherResponse {
+func (a *App) Fetch(host string, port string, selector string, itemType string) GopherResponse {
 	if port == "" {
 		port = "70"
 	}
 	if selector == "" {
 		selector = "/"
+	}
+	if itemType == "" {
+		itemType = "1"
 	}
 
 	address := fmt.Sprintf("%s:%s", host, port)
@@ -57,7 +62,21 @@ func (a *App) Fetch(host string, port string, selector string) GopherResponse {
 		return GopherResponse{Err: fmt.Sprintf("Failed to write to connection: %v", err)}
 	}
 
-	scanner := bufio.NewScanner(conn)
+	data, err := io.ReadAll(conn)
+	if err != nil {
+		return GopherResponse{Err: fmt.Sprintf("Failed to read from connection: %v", err)}
+	}
+
+	if itemType == "g" || itemType == "I" {
+		encoded := base64.StdEncoding.EncodeToString(data)
+		return GopherResponse{
+			ContentType: "image",
+			Raw:         encoded,
+		}
+	}
+
+	rawText := string(data)
+	scanner := bufio.NewScanner(strings.NewReader(rawText))
 	var items []GopherItem
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -74,31 +93,27 @@ func (a *App) Fetch(host string, port string, selector string) GopherResponse {
 		return GopherResponse{Err: fmt.Sprintf("Failed to read from connection: %v", err)}
 	}
 
-	return GopherResponse{Items: items}
+	return GopherResponse{Items: items, Raw: rawText}
 }
 
 func parseGopherLine(line string) GopherItem {
 	if len(line) < 1 {
 		return GopherItem{
-			Type:        "i",
-			Display:     " ",
-			Selector:    "",
-			Host:        "error.host",
-			Port:        "1",
-			Description: getTypeDescription("i"),
+			Type:     "i",
+			Display:  " ",
+			Selector: "",
+			Host:     "error.host",
+			Port:     "1",
 		}
 	}
 
-	// Check if line starts with a tab or has no tabs (not proper gopher format)
-	// Treat as plain text info line
 	if line[0] == '\t' || !strings.Contains(line, "\t") {
 		return GopherItem{
-			Type:        "i",
-			Display:     line,
-			Selector:    "",
-			Host:        "error.host",
-			Port:        "1",
-			Description: getTypeDescription("i"),
+			Type:     "i",
+			Display:  line,
+			Selector: "",
+			Host:     "error.host",
+			Port:     "1",
 		}
 	}
 
@@ -118,33 +133,5 @@ func parseGopherLine(line string) GopherItem {
 	if len(parts) > 3 {
 		item.Port = parts[3]
 	}
-	item.Description = getTypeDescription(itemType)
 	return item
-}
-
-func getTypeDescription(itemType string) string {
-	descriptions := map[string]string{
-		"0": "Text file",
-		"1": "Directory",
-		"2": "CSO phone-book server",
-		"3": "Error",
-		"4": "BinHex encoded file",
-		"5": "DOS binary archive",
-		"6": "UNIX uuencoded file",
-		"7": "Search server",
-		"8": "Telnet session",
-		"9": "Binary file",
-		"+": "Redundant server",
-		"g": "GIF image",
-		"I": "Image file",
-		"T": "TN3270 session",
-		"h": "HTML file",
-		"i": "Info line",
-		"s": "Sound file",
-	}
-
-	if desc, ok := descriptions[itemType]; ok {
-		return desc
-	}
-	return "Unknown type"
 }

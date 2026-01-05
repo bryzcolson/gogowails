@@ -25,8 +25,15 @@ export function getIcon(type: string): string {
   return '❓';
 }
 
+const clickableTypes = [
+  '0',
+  '1',
+  'g',
+  'I',
+]
+
 export function isClickableType(type: string): boolean {
-  return type === '1' || type === '0' || type === 'h' || type === '7';
+  return clickableTypes.includes(type);
 }
 
 export function isInfoType(type: string): boolean {

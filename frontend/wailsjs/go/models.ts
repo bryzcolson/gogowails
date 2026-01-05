@@ -6,7 +6,6 @@ export namespace main {
 	    selector: string;
 	    host: string;
 	    port: string;
-	    description: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new GopherItem(source);
@@ -19,13 +18,13 @@ export namespace main {
 	        this.selector = source["selector"];
 	        this.host = source["host"];
 	        this.port = source["port"];
-	        this.description = source["description"];
 	    }
 	}
 	export class GopherResponse {
 	    items: GopherItem[];
 	    raw: string;
 	    err: string;
+	    contentType: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new GopherResponse(source);
@@ -36,6 +35,7 @@ export namespace main {
 	        this.items = this.convertValues(source["items"], GopherItem);
 	        this.raw = source["raw"];
 	        this.err = source["err"];
+	        this.contentType = source["contentType"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

@@ -5,7 +5,7 @@
 
   interface Props {
     response: GopherResponse;
-    onItemClick: (item: { host: string, port: string, selector: string }) => void;
+    onItemClick: (item: { host: string, port: string, selector: string, type: string }) => void;
   }
 
   let { response, onItemClick }: Props = $props();
@@ -16,13 +16,18 @@
         host: item.host,
         port: item.port,
         selector: item.selector,
+        type: item.type,
       });
     }
   }
 </script>
 
 <div class="gopher-content">
-  {#if response.items && response.items.length > 0}
+  {#if response.contentType === 'image' && response.raw}
+    <div class="image-container">
+      <img src="data:image/gif;base64,{response.raw}" alt="Gopher image" />
+    </div>
+  {:else if response.items && response.items.length > 0}
     <div class="items">
       {#each response.items as item, index (index)}
         <ItemComponent
@@ -57,5 +62,16 @@
     text-align: center;
     padding: 3rem;
     color: #666;
+  }
+
+  .image-container {
+    text-align: center;
+    padding: 2rem;
+  }
+
+  .image-container img {
+    max-width: 100%;
+    height: auto;
+    border: 1px solid #ccc;
   }
 </style>

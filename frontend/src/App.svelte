@@ -15,7 +15,7 @@
     navigate(url);
   });
 
-  async function navigate(url: string, addToHistory = true) {
+  async function navigate(url: string, addToHistory = true, itemType = "1") {
     const parsed = parseUrl(url);
     if (!parsed) {
       return;
@@ -23,7 +23,7 @@
 
     response = null;
 
-    const result = await Fetch(parsed.host, parsed.port, parsed.selector);
+    const result = await Fetch(parsed.host, parsed.port, parsed.selector, itemType);
     if (!result.err) {
       response = result;
 
@@ -76,11 +76,11 @@
     navigate(newUrl);
   }
 
-  function handleItemClick(item: { host: string, port: string, selector: string }) {
+  function handleItemClick(item: { host: string, port: string, selector: string, type: string }) {
     const portPart = item.port === "70" ? "" : `:${item.port}`;
     const newURL = `gopher://${item.host}${portPart}${item.selector}`;
     url = newURL;
-    navigate(newURL);
+    navigate(newURL, true, item.type);
   }
 </script>
 
