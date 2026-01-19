@@ -1,3 +1,5 @@
+codeberg.org/bryzcolson/net-gopher v0.1.2 h1:vmRJqil7NrC231Py1uWxZb8bKdR0ZRDc/YLdqDs8Ll8=
+codeberg.org/bryzcolson/net-gopher v0.1.2/go.mod h1:XGm8M+C4Je0Q5tKLzN9H7+ooqQmGmAn43b/c+jQHvzo=
 github.com/bep/debounce v1.2.1 h1:v67fRdBA9UQu2NhLFXrSg0Brw7CexQekrBwDMM8bzeY=
 github.com/bep/debounce v1.2.1/go.mod h1:H8yggRPQKLUhUoqrJC1bO2xNya7vanpDl7xR3ISbCJ0=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=

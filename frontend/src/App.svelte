@@ -28,7 +28,7 @@
       response = result;
 
       if (addToHistory) {
-        navigationStore.push(url);
+        navigationStore.push(url, itemType);
       }
     }
   }
@@ -54,20 +54,18 @@
   }
 
   function handleBack() {
-    navigationStore.goBack();
-    const newUrl = navigationStore.currentUrl;
-    if (newUrl) {
-      url = newUrl;
-      navigate(newUrl, false);
+    const entry = navigationStore.goBack();
+    if (entry) {
+      url = entry.url;
+      navigate(entry.url, false, entry.itemType);
     }
   }
 
   function handleNext() {
-    navigationStore.goForward();
-    const newUrl = navigationStore.currentUrl;
-    if (newUrl) {
-      url = newUrl;
-      navigate(newUrl, false);
+    const entry = navigationStore.goForward();
+    if (entry) {
+      url = entry.url;
+      navigate(entry.url, false, entry.itemType);
     }
   }
 

@@ -6,9 +6,9 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
-	"net"
 	"strings"
-	"time"
+
+	gopher "codeberg.org/bryzcolson/net-gopher"
 )
 
 type App struct {
@@ -46,33 +46,31 @@ func (a *App) Fetch(host string, port string, selector string, itemType string) 
 		selector = "/"
 	}
 	if itemType == "" {
-		itemType = "1"
+		itemType = string(gopher.TypeDirectory)
 	}
 
-	address := fmt.Sprintf("%s:%s", host, port)
-	conn, err := net.DialTimeout("tcp", address, 10*time.Second)
+	url := fmt.Sprintf("gopher://%s:%s/%s%s", host, port, itemType, selector)
+	resp, err := gopher.Get(url)
 	if err != nil {
-		return GopherResponse{Err: fmt.Sprintf("Connection failed: %v", err)}
+		return GopherResponse{Err: fmt.Sprintf("Failed to fetch: %v", err)}
 	}
-	defer conn.Close()
-	conn.SetDeadline(time.Now().Add(10 * time.Second))
+	defer resp.Body.Close()
 
-	_, err = conn.Write([]byte(selector + "\r\n"))
+	data, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return GopherResponse{Err: fmt.Sprintf("Failed to write to connection: %v", err)}
+		return GopherResponse{Err: fmt.Sprintf("Failed to read response: %v", err)}
 	}
 
-	data, err := io.ReadAll(conn)
-	if err != nil {
-		return GopherResponse{Err: fmt.Sprintf("Failed to read from connection: %v", err)}
-	}
-
-	if itemType == "g" || itemType == "I" {
+	if itemType == string(gopher.TypeGIF) || itemType == string(gopher.TypeImage) {
 		encoded := base64.StdEncoding.EncodeToString(data)
-		return GopherResponse{
-			ContentType: "image",
-			Raw:         encoded,
-		}
+		return GopherResponse{ContentType: "image", Raw: encoded}
+	}
+
+	if itemType == string(gopher.TypeText) {
+		rawText := string(data)
+		rawText = strings.TrimSuffix(rawText, ".\r\n")
+		rawText = strings.TrimSuffix(rawText, ".\n")
+		return GopherResponse{ContentType: "text", Raw: rawText}
 	}
 
 	rawText := string(data)
@@ -83,6 +81,19 @@ func (a *App) Fetch(host string, port string, selector string, itemType string) 
 
 		if line == "." {
 			break
+		}
+
+		if len(line) == 0 {
+			continue
+		}
+
+		if !strings.Contains(line, "\t") {
+			if len(line) > 0 && line[0] == byte(gopher.TypeInfo) {
+				items = append(items, GopherItem{Type: string(gopher.TypeInfo), Display: line[1:]})
+			} else {
+				items = append(items, GopherItem{Type: string(gopher.TypeInfo), Display: line})
+			}
+			continue
 		}
 
 		item := parseGopherLine(line)
@@ -97,29 +108,8 @@ func (a *App) Fetch(host string, port string, selector string, itemType string) 
 }
 
 func parseGopherLine(line string) GopherItem {
-	if len(line) < 1 {
-		return GopherItem{
-			Type:     "i",
-			Display:  " ",
-			Selector: "",
-			Host:     "error.host",
-			Port:     "1",
-		}
-	}
-
-	if line[0] == '\t' || !strings.Contains(line, "\t") {
-		return GopherItem{
-			Type:     "i",
-			Display:  line,
-			Selector: "",
-			Host:     "error.host",
-			Port:     "1",
-		}
-	}
-
-	itemType := string(line[0])
 	parts := strings.Split(line[1:], "\t")
-	item := GopherItem{Type: itemType, Display: ""}
+	item := GopherItem{Type: string(line[0])}
 
 	if len(parts) > 0 {
 		item.Display = parts[0]

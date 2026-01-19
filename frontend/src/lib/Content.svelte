@@ -27,6 +27,8 @@
     <div class="image-container">
       <img src="data:image/gif;base64,{response.raw}" alt="Gopher image" />
     </div>
+  {:else if response.contentType === 'text' && response.raw}
+    <pre class="text-content">{response.raw}</pre>
   {:else if response.items && response.items.length > 0}
     <div class="items">
       {#each response.items as item, index (index)}
@@ -73,5 +75,11 @@
     max-width: 100%;
     height: auto;
     border: 1px solid #ccc;
+  }
+
+  .text-content {
+    white-space: pre-wrap;
+    font-family: inherit;
+    margin: 0;
   }
 </style>
