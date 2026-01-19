@@ -1,4 +1,4 @@
-module gogowails
+module codeberg.org/bryzcolson/gogowails
 
 go 1.23
 
