@@ -49,8 +49,21 @@ func (a *App) Fetch(host string, port string, selector string, itemType string) 
 		itemType = string(gopher.TypeDirectory)
 	}
 
-	url := fmt.Sprintf("gopher://%s:%s/%s%s", host, port, itemType, selector)
-	resp, err := gopher.Get(url)
+	// Check if selector contains a search query (tab-separated)
+	query := ""
+	if idx := strings.Index(selector, "\t"); idx != -1 {
+		query = selector[idx+1:]
+		selector = selector[:idx]
+	}
+
+	gopherURL := fmt.Sprintf("gopher://%s:%s/%s%s", host, port, itemType, selector)
+	req, err := gopher.NewRequest(gopherURL)
+	if err != nil {
+		return GopherResponse{Err: fmt.Sprintf("Failed to create request: %v", err)}
+	}
+	req.Query = query
+
+	resp, err := gopher.DefaultClient.Do(req)
 	if err != nil {
 		return GopherResponse{Err: fmt.Sprintf("Failed to fetch: %v", err)}
 	}

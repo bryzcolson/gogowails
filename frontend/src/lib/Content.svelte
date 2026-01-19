@@ -5,7 +5,7 @@
 
   interface Props {
     response: GopherResponse;
-    onItemClick: (item: { host: string, port: string, selector: string, type: string }) => void;
+    onItemClick: (item: { host: string, port: string, selector: string, type: string, display: string }) => void;
   }
 
   let { response, onItemClick }: Props = $props();
@@ -17,6 +17,7 @@
         port: item.port,
         selector: item.selector,
         type: item.type,
+        display: item.display,
       });
     }
   }

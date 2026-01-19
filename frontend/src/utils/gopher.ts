@@ -28,6 +28,7 @@ export function getIcon(type: string): string {
 const clickableTypes = [
   '0',
   '1',
+  '7',
   'g',
   'I',
 ]
